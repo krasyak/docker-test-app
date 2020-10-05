@@ -1,0 +1,101 @@
+---
+- hosts: s116
+  vars_files: #root password in thr secret (vault) pass from vault in the vault.txt
+    - .secret # --vault-password-file=vault.txt
+  gather_facts: no
+  tasks:
+
+    # - name: Setup root SSH
+    #   become: yes #root password in the host file
+    #   shell: |
+    #    echo 'PermitRootLogin yes
+    #    PasswordAuthentication yes' >> /etc/ssh/sshd_config
+    #    systemctl restart sshd
+    # #
+    # - name: Add user to remote hosts
+    #   become: yes #root password in the host file
+    #   user: name=root password=$6$u99wkDI1rVv/EsxD$wohxOl7.mXzlCCkdCUcN5MEf7vv2JCiQ00vebMvOaJy60qmi60MpxuZTcG.Scg/OvKl0SS0JNPUNIvdRXntiv0
+
+    - name: Set authorized key taken from file
+      authorized_key:
+        user: uu
+        state: present
+        key: "{{ lookup('file', '/home/uu/.ssh/id_rsa.pub') }}"
+
+    - name: Update apt-get repo and cache
+      become: yes
+      apt: update_cache=yes force_apt_get=yes cache_valid_time=3600
+
+    # - name: Get software for apt repository management.
+    #   become: yes
+    #   apt: name={{ item }} state=present
+    #   with_items:
+    #     - python3-pip
+    #     - python3-dev
+    #     - build-essential
+    #     - libssl-dev
+    #     - libffi-dev
+    #     - python3-setuptools
+    #     - python3-venv
+    #     - nginx
+
+    - name: Install requirements
+      pip:
+         # requirements: /home/uu/fb/requirements.txt
+         name:
+           - wheel
+           - flask
+           - uwsgi
+         virtualenv: /home/uu/fb/env
+         virtualenv_command: /usr/bin/python3 -m venv
+
+
+    - name: Ansible copy multiple files with_items
+      copy:
+        src: /home/uu/Project_fb/{{item}}
+        dest: /home/uu/fb
+        mode: 0774
+      with_items:
+        ['fb.ini','wsgi.py','requirements.txt','code/']
+
+    - name: sssss
+      become: yes
+      copy:
+       src: /home/uu/Project_fb/fb_nginx
+       dest: /etc/nginx/sites-available/
+
+    - name: Create a symbolic link
+      become: yes
+      file:
+        src: /etc/nginx/sites-available/fb_nginx
+        dest: /etc/nginx/sites-enabled/default
+        state: link
+
+    - name: sssss
+      become: yes
+      copy:
+       src: /home/uu/Project_fb/fb.service
+       dest: /etc/systemd/system/
+
+
+    - name: NGINX
+      become: yes
+      shell: |
+        systemctl start fb
+        systemctl enable fb
+        nginx -t
+        systemctl restart nginx
+
+    #   register: output
+    # - debug:
+    #    msg: "{{ output.stdout_lines|list }}"
+    # ln -s /etc/nginx/sites-available/fb_nginx /etc/nginx/sites-enabled
+
+  # - name: Disable the firewall (since this is for local dev only).
+  #   service: name=ufw state=stopped
+  #
+  # - name: "Start Apache, MySQL, and PHP."
+  #   service: "name={{ item }} state=started enabled=yes"
+  #   with_items:
+  #      - fb.service
+  #      - nginx
