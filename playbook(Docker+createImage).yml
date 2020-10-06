@@ -1,0 +1,79 @@
+---
+- hosts: s118
+  vars_files:
+    - vars/default.yml #root password in thr secret (vault) pass from vault in the vault.txt
+    - .secret # --vault-password-file=vault.txt
+  gather_facts: no
+  become: yes
+  tasks:
+
+    - name: Set authorized key taken from file
+      authorized_key:
+        user: uu
+        state: present
+        key: "{{ lookup('file', '/home/uu/.ssh/id_rsa.pub') }}"
+
+    - name: Install aptitude using apt
+      apt: name=aptitude state=latest update_cache=yes force_apt_get=yes
+
+    - name: Install required system packages
+      apt: name={{ item }} state=latest update_cache=yes
+      loop: [ 'apt-transport-https', 'ca-certificates', 'curl', 'software-properties-common', 'python3-pip', 'virtualenv', 'python3-setuptools']
+
+    - name: Add Docker GPG apt Key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add Docker Repository
+      apt_repository:
+        repo: deb https://download.docker.com/linux/ubuntu bionic stable
+        state: present
+
+    - name: Update apt and install docker-ce
+      apt: update_cache=yes name=docker-ce state=latest
+
+    - name: Run command if /path/to/database does not exist (without 'args')
+      remote_user: uu
+      command: usermod -aG docker $USER
+
+    - name: Copy folder
+      become: no
+      synchronize:
+          src: /home/uu/docker-test-app/
+          dest: /home/uu/docker-test-app
+          rsync_opts:
+            - "--exclude=.git"
+
+    - name: Execute the script
+      remote_user: uu
+      script: /home/uu/docker-test-app/start.sh
+      register: output
+    - debug:
+           msg: "{{ output.stdout_lines|list }}"
+
+    #   register: output
+    # - debug:
+    #        msg: "{{ output.stdout_lines|list }}"
+
+    #
+    # - name: Install Docker Module for Python
+    #   pip:
+    #     name: docker
+    #
+    # - name: Pull default Docker image
+    #   docker_image:
+    #     name: "{{ default_container_image }}"
+    #     source: pull
+    #
+    # # Creates the number of containers defined by the variable create_containers, using values from vars file
+    # - name: Create default containers
+    #   docker_container:
+    #     name: "{{ default_container_name }}{{ item }}"
+    #     image: "{{ default_container_image }}"
+    #     command: "{{ default_container_command }}"
+    #     state: present
+    #   with_sequence: count={{ create_containers }}
+    #
+    # - name: Create default containers
+    #   script: /home/uu/docker-test-app/script.sh
