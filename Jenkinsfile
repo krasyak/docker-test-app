@@ -33,9 +33,9 @@ pipeline {
         }
         stage('Docker Push') {
             steps {
-                echo " ====================== Pushing Image ========================"
+               echo " ====================== Pushing Image ========================"
                 sh """
-                    ls -la
+                    docker push krasyak/nginx-alpine:latest
                 """
             }
         }
