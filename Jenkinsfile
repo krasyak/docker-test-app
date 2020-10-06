@@ -26,7 +26,7 @@ pipeline {
             steps {
                 echo " ================== start buolding image =============="
                 dir ('.'){
-                    sh bash start.sh
+                    sh "bash start.sh"
                 }
                 
             }
