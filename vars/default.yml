@@ -1,5 +1,5 @@
 ---
 create_containers: 2
-default_container_name: uwsgi-nginx-flask-python3.6-alpine3.7
+default_container_name: docker-alpine
 default_container_image: tiangolo/uwsgi-nginx-flask
 default_container_command: sleep 1d
