@@ -1,5 +1,5 @@
   #!/bin/bash
-  app="nginx-alpine"
+  app="krasyak/uwsgi-nginx-flask"
   docker build -t ${app} .
   docker run -d -p 56733:80 \
   --name=${app} \

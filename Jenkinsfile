@@ -35,7 +35,7 @@ pipeline {
             steps {
                echo " ====================== Pushing Image ========================"
                 sh """
-                    docker push krasyak/nginx-alpine:latest
+                    docker push krasyak/uwsgi-nginx-flask:latest
                 """
             }
         }
